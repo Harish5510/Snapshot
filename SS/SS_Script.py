@@ -15,6 +15,10 @@ def filter_instances(project):
         instances = ec2.instances.all()
     return instances
 
+def volume_has_inprogress_SS(volume):
+    snapshot = list(volume.snapshots.all())
+    return snapshot and snapshot[0].state == "pending"
+
 @click.group()
 def cli():
     "This scripts manages our server maintanance"
@@ -46,8 +50,10 @@ def snapshots():
 @snapshots.command('list')
 @click.option('--project', default=None,
     help="This will select all snapshots in Project Python")
+@click.option('--all','list_all', default=False, is_flag=True,
+    help="This will select all snapshots if all is not given in the command")
 
-def list_snapshots(project):
+def list_snapshots(project, list_all):
     "List all snapshots associated with Ec2 instances"
     instances = filter_instances(project)
     for i in list(instances):
@@ -61,6 +67,7 @@ def list_snapshots(project):
                     s.progress,
                     str(s.start_time.strftime("%c"))
                     )))
+                if s.state == "completed" and not list_all : break
     return
 @cli.group('instances')
 def instances():
@@ -78,6 +85,10 @@ def create_snapshots(project):
         i.stop()
         i.wait_until_stopped()
         for v in i.volumes.all():
+            if volume_has_inprogress_SS(v):
+                print("skipping..snapshot is already in progress for volume {0}.".format(v.id))
+                continue
+
             print("Creating snopshot for volume{0}".format(v.id))
             v.create_snapshot(Description="Created by Pyton script")
             i.start()

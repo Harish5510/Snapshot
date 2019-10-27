@@ -15,8 +15,71 @@ def filter_instances(project):
     return instances
 
 @click.group()
+def cli():
+    "This scripts manages our server maintanance"
+
+@cli.group('volumes')
+def volumes():
+    "This manages volumes"
+@volumes.command('list')
+@click.option('--project', default=None,
+    help="This will select all instance in Project Python")
+
+def list_volumes(project):
+    "List all volumes attached with Ec2 instances"
+    instances = filter_instances(project)
+    for i in list(instances):
+        for v in i.volumes.all():
+            print(', '.join((
+                v.id,
+                i.id,
+                v.state,
+                str(v.size) + "GiB",
+                v.encrypted and "Encrypted" or "Not Encrypted"
+                )))
+    return
+
+@cli.group('snapshots')
+def snapshots():
+    "This manages snapshots"
+@snapshots.command('list')
+@click.option('--project', default=None,
+    help="This will select all snapshots in Project Python")
+
+def list_snapshots(project):
+    "List all snapshots associated with Ec2 instances"
+    instances = filter_instances(project)
+    for i in list(instances):
+        for v in i.volumes.all():
+            for s in v.snapshots.all():
+                print(', '.join((
+                    s.id,
+                    v.id,
+                    i.id,
+                    s.state,
+                    s.progress,
+                    str(s.start_time.strftime("%c"))
+                    )))
+    return
+@cli.group('instances')
 def instances():
     "Commands for instances"
+
+@instances.command('snapshot')
+@click.option('--project', default=None,
+    help="This will select all instance in Project Python")
+
+def create_snapshots(project):
+    "creates snapshots for instances"
+    instances = filter_instances(project)
+    for i in list(instances):
+        i.stop()
+        for v in i.volumes.all():
+            print("Creating snopshot for volume{0}".format(v.id))
+            v.create_snapshot(Description="Created by Pyton script")
+
+    return
+
 @instances.command('list')
 @click.option('--project', default=None,
     help="This will select all instance in Project Python")
@@ -62,4 +125,5 @@ def start_function(project):
         i.start()
     return
 
-instances()
+if __name__ == '__main__':
+    cli()

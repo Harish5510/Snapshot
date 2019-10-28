@@ -155,6 +155,7 @@ def stop_function(project, force):
             print("stopping {0}..".format(i.id))
             try:
                 i.stop()
+                i.wait_until_stopped()
             except botocore.exceptions.ClientError as e:
                 print("Could not stop instance {0} .".format(i.id) + str(e))
 
@@ -177,6 +178,7 @@ def start_function(project, force):
             print("start {0}..".format(i.id))
             try:
                 i.start()
+                i.wait_until_running()
             except botocore.exceptions.ClientError as e:
                 print("Could not start instance {0} .".format(i.id) + str(e))
         return

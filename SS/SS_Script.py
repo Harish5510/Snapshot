@@ -69,7 +69,7 @@ def list_snapshots(project, list_all):
                     )))
                 if s.state == "completed" and not list_all : break
     return
-    
+
 @cli.group('instances')
 def instances():
     "Commands for instances"
@@ -110,13 +110,13 @@ def create_snapshots(project, force):
                     print("skipping..snapshot is already in progress for volume {0}.".format(v.id))
                     continue
 
-                    print("Creating snopshot for volume{0}".format(v.id))
-                    v.create_snapshot(Description="Created by Pyton script")
-                    i.start()
-                    print("starting instance {}".format(i.id))
-                    i.wait_until_running()
-            print("Job is done!!")
-            return
+                print("Creating snopshot for volume{0}".format(v.id))
+                v.create_snapshot(Description="Created by Pyton script")
+                i.start()
+                print("starting instance {}".format(i.id))
+                i.wait_until_running()
+        print("Job is done!!")
+        return
     else:
         print("project or force flag is missing in the command. Hence exiting the opeartion")
         pass

@@ -69,33 +69,57 @@ def list_snapshots(project, list_all):
                     )))
                 if s.state == "completed" and not list_all : break
     return
+    
 @cli.group('instances')
 def instances():
     "Commands for instances"
 
+@instances.command('reboot')
+@click.option('--project', default=None,
+    help="This will reboot all instance in Project Python")
+@click.option('--force', default=False, is_flag=True,
+    help="This flag adds force option")
+
+def reboot_instances(project, force):
+    "reboot all ec2 server associated with project"
+    instances = filter_instances(project)
+    if project or force:
+        for i in list(instances):
+            print("rebooting instance {}.".format(i.id))
+            i.reboot()
+        return
+    else:
+        print("project or force flag is missing in the command. Hence exiting the opeartion")
+
 @instances.command('snapshot')
 @click.option('--project', default=None,
     help="This will select all instance in Project Python")
+@click.option('--force', default=False, is_flag=True,
+    help="This flag adds force option")
 
-def create_snapshots(project):
+def create_snapshots(project, force):
     "creates snapshots for instances"
-    instances = filter_instances(project)
-    for i in list(instances):
-        print("stopping instance {}".format(i.id))
-        i.stop()
-        i.wait_until_stopped()
-        for v in i.volumes.all():
-            if volume_has_inprogress_SS(v):
-                print("skipping..snapshot is already in progress for volume {0}.".format(v.id))
-                continue
+    if project or force:
+        instances = filter_instances(project)
+        for i in list(instances):
+            print("stopping instance {}".format(i.id))
+            i.stop()
+            i.wait_until_stopped()
+            for v in i.volumes.all():
+                if volume_has_inprogress_SS(v):
+                    print("skipping..snapshot is already in progress for volume {0}.".format(v.id))
+                    continue
 
-            print("Creating snopshot for volume{0}".format(v.id))
-            v.create_snapshot(Description="Created by Pyton script")
-            i.start()
-            print("starting instance {}".format(i.id))
-            i.wait_until_running()
-    print("Job is done!!")
-    return
+                    print("Creating snopshot for volume{0}".format(v.id))
+                    v.create_snapshot(Description="Created by Pyton script")
+                    i.start()
+                    print("starting instance {}".format(i.id))
+                    i.wait_until_running()
+            print("Job is done!!")
+            return
+    else:
+        print("project or force flag is missing in the command. Hence exiting the opeartion")
+        pass
 
 @instances.command('list')
 @click.option('--project', default=None,
@@ -119,35 +143,46 @@ def list_function(project):
 @instances.command('stop')
 @click.option('--project', default=None,
     help="This will select all instance in Project Python")
+@click.option('--force', default=False, is_flag=True,
+    help="This flag adds force option")
 
-def stop_function(project):
+def stop_function(project, force):
     "stop all Ec2 Instances"
-    instances = filter_instances(project)
+    if project or force:
+        instances = filter_instances(project)
 
-    for i in instances:
-        print("stopping {0}..".format(i.id))
-        try:
-            i.stop()
-        except botocore.exceptions.ClientError as e:
-            print("Could not stop instance {0} .".format(i.id) + str(e))
+        for i in instances:
+            print("stopping {0}..".format(i.id))
+            try:
+                i.stop()
+            except botocore.exceptions.ClientError as e:
+                print("Could not stop instance {0} .".format(i.id) + str(e))
 
-    return
+        return
+    else:
+        print("project or force flag is missing in the command. Hence exiting the opeartion")
+        pass
 
 @instances.command('start')
 @click.option('--project', default=None,
     help="This will select all instance in Project Python")
-
-def start_function(project):
+@click.option('--force', default=False, is_flag=True,
+    help="This flag adds force option")
+def start_function(project, force):
     "start all Ec2 Instances"
-    instances = filter_instances(project)
+    if project or force:
+        instances = filter_instances(project)
 
-    for i in instances:
-        print("start {0}..".format(i.id))
-        try:
-            i.start()
-        except botocore.exceptions.ClientError as e:
-            print("Could not start instance {0} .".format(i.id) + str(e))
-    return
+        for i in instances:
+            print("start {0}..".format(i.id))
+            try:
+                i.start()
+            except botocore.exceptions.ClientError as e:
+                print("Could not start instance {0} .".format(i.id) + str(e))
+        return
+    else:
+        print("project or force flag is missing in the command. Hence exiting the opeartion")
+        pass
 
 if __name__ == '__main__':
     cli()
